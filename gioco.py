@@ -1,6 +1,4 @@
 import arcade
-import os
-# from arcade import *
 
 class MyGame(arcade.Window):
 
