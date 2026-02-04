@@ -1,0 +1,188 @@
+import arcade
+import os
+
+BOARD_SIZE = 15
+ASSETS_DIR = "assets"
+
+BLACK_PIECE_IMAGE = os.path.join(ASSETS_DIR, "black_stone.png")
+WHITE_PIECE_IMAGE = os.path.join(ASSETS_DIR, "white_stone.png")
+
+
+class GomokuGame(arcade.Window):
+    def __init__(self):
+        super().__init__(600, 600, "Wuziqi (五子棋)")
+        
+        self.margin = 50
+        self.cell_size = (self.width - 2 * self.margin) / (BOARD_SIZE - 1)
+        
+        self.pieces = arcade.SpriteList()
+        self.board_state = {}  # (row, col) -> "black" or "white"
+        self.current_player = "black"
+        
+        self.piece_scale = self.cell_size / 256 * 0.9
+        arcade.set_background_color(arcade.color.BISQUE)
+        
+        # 添加一个显示当前玩家的标签
+        self.player_label = None
+        
+    def setup(self):
+        """初始化游戏"""
+        self.player_label = arcade.Text(
+            f"当前玩家: 黑棋",
+            self.width // 2, 20,
+            arcade.color.BLACK, 18,
+            anchor_x="center"
+        )
+        
+    def on_draw(self):
+        self.clear()
+        
+        # 绘制棋盘网格线
+        for i in range(BOARD_SIZE):
+            # 水平线
+            y = self.margin + i * self.cell_size
+            arcade.draw_line(
+                self.margin, y, 
+                self.width - self.margin, y, 
+                arcade.color.BLACK, 2
+            )
+            
+            # 垂直线
+            x = self.margin + i * self.cell_size
+            arcade.draw_line(
+                x, self.margin, 
+                x, self.height - self.margin, 
+                arcade.color.BLACK, 2
+            )
+        
+        # 绘制星位标记（围棋传统）
+        star_points = [3, 7, 11]  # 15x15棋盘的星位
+        for row in star_points:
+            for col in star_points:
+                x, y = self.grid_to_pixel(row, col)
+                arcade.draw_circle_filled(x, y, 5, arcade.color.BLACK)
+        
+        # 绘制所有棋子
+        self.pieces.draw()
+        
+        # 绘制边框
+        arcade.draw_rectangle_outline(
+            self.width // 2, self.height // 2,
+            self.width - 2 * self.margin, self.height - 2 * self.margin,
+            arcade.color.BLACK, 3
+        )
+        
+        # 显示当前玩家
+        if self.player_label:
+            self.player_label.draw()
+    
+    def on_mouse_press(self, x, y, button, modifiers):
+        """处理鼠标点击事件"""
+        # 获取最近的棋盘交叉点
+        row, col = self.get_nearest_intersection(x, y)
+        
+        # 如果点击在棋盘外，或者该位置已有棋子，则返回
+        if row is None or (row, col) in self.board_state:
+            return
+        
+        # 获取该交叉点的像素坐标
+        px, py = self.grid_to_pixel(row, col)
+        
+        # 根据当前玩家创建对应的棋子
+        if self.current_player == "black":
+            piece = arcade.Sprite(BLACK_PIECE_IMAGE, self.piece_scale)
+            self.board_state[(row, col)] = "black"
+            self.current_player = "white"
+            player_text = "白棋"
+        else:
+            piece = arcade.Sprite(WHITE_PIECE_IMAGE, self.piece_scale)
+            self.board_state[(row, col)] = "white"
+            self.current_player = "black"
+            player_text = "黑棋"
+        
+        # 设置棋子位置并添加到列表
+        piece.center_x = px
+        piece.center_y = py
+        self.pieces.append(piece)
+        
+        # 更新玩家标签
+        self.player_label = arcade.Text(
+            f"当前玩家: {player_text}",
+            self.width // 2, 20,
+            arcade.color.BLACK, 18,
+            anchor_x="center"
+        )
+        
+        # 检查是否获胜
+        if self.check_win(row, col):
+            winner = "黑棋" if self.board_state[(row, col)] == "black" else "白棋"
+            self.player_label = arcade.Text(
+                f"{winner} 获胜！",
+                self.width // 2, self.height - 20,
+                arcade.color.RED, 24,
+                anchor_x="center"
+            )
+    
+    def grid_to_pixel(self, row, col):
+        """将网格坐标转换为像素坐标"""
+        return (
+            self.margin + col * self.cell_size,
+            self.margin + row * self.cell_size
+        )
+    
+    def get_nearest_intersection(self, x, y):
+        """获取最近的棋盘交叉点"""
+        # 计算最接近的网格坐标
+        col = round((x - self.margin) / self.cell_size)
+        row = round((y - self.margin) / self.cell_size)
+        
+        # 确保坐标在棋盘范围内
+        if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
+            return row, col
+        return None, None
+    
+    def check_win(self, row, col):
+        """检查是否有五子连珠"""
+        if (row, col) not in self.board_state:
+            return False
+            
+        player = self.board_state[(row, col)]
+        directions = [
+            [(0, 1), (0, -1)],   # 垂直方向
+            [(1, 0), (-1, 0)],   # 水平方向
+            [(1, 1), (-1, -1)],  # 对角线（左上到右下）
+            [(1, -1), (-1, 1)]   # 对角线（右上到左下）
+        ]
+        
+        for dir_pair in directions:
+            count = 1  # 当前位置已经有1个棋子
+            
+            # 检查每个方向的两个相反方向
+            for dx, dy in dir_pair:
+                current_row, current_col = row, col
+                
+                # 沿着该方向检查连续的棋子
+                while True:
+                    current_row += dx
+                    current_col += dy
+                    
+                    # 检查是否仍在棋盘内且是同色棋子
+                    if (0 <= current_row < BOARD_SIZE and 
+                        0 <= current_col < BOARD_SIZE and 
+                        (current_row, current_col) in self.board_state and
+                        self.board_state[(current_row, current_col)] == player):
+                        count += 1
+                    else:
+                        break
+            
+            # 如果有5个或更多连续棋子，则获胜
+            if count >= 5:
+                return True
+        
+        return False
+
+
+if __name__ == "__main__":
+    game = GomokuGame()
+    game.setup()
+    arcade.run()
