@@ -2,66 +2,48 @@ import arcade
 import os
 import math
 
-# ==================  Configurazione di base ==================
-BOARD_SIZE = 15  #  wuziqi 15x15
+BOARD_SIZE = 15
 ASSETS_DIR = "assets"
 
-BOARD_IMAGE = os.path.join(ASSETS_DIR, "beijing.jpg")
-BLACK_PIECE_IMAGE = os.path.join(ASSETS_DIR, "heizi.png")
-WHITE_PIECE_IMAGE = os.path.join(ASSETS_DIR, "baizi.png")
+BLACK_PIECE_IMAGE = os.path.join(ASSETS_DIR, "black_stone.png")
+WHITE_PIECE_IMAGE = os.path.join(ASSETS_DIR, "white_stone.png")
 
 
 class GomokuGame(arcade.Window):
     def __init__(self):
-        # Carica lo sfondo della scacchiera e crea la finestra in base ai pixel
-        texture = arcade.load_texture(BOARD_IMAGE)
-        self.board_width = texture.width
-        self.board_height = texture.height
+        super().__init__(600, 600, "Wuziqi")
 
-        super().__init__(
-            self.board_width,
-            self.board_height,
-            "wuziqi"
-        )
-
-        #  Sprite dello sfondo
-        self.board_sprite = arcade.Sprite(BOARD_IMAGE)
-        self.board_sprite.center_x = self.board_width / 2
-        self.board_sprite.center_y = self.board_height / 2
-
-        # Calcola i parametri della griglia (adattamento automatico all'immagine)
         self.margin = 50
-        self.cell_size = (self.board_width - 2 * self.margin) / (BOARD_SIZE - 1)
+        self.cell_size = (600 - 2 * self.margin) / (BOARD_SIZE - 1)
 
-        # Pezzi degli scacchi
         self.pieces = arcade.SpriteList()
-        self.board_state = {}  # {(row, col): "black"/"white"} / Stato della scacchiera
-
-        #  Giocatore corrente
+        self.board_state = {}
         self.current_player = "black"
 
-        # Scala dei pezzi (calcolata automaticamente in base alla cella)
         self.piece_scale = self.cell_size / 256 * 0.9
+        arcade.set_background_color(arcade.color.BISQUE)
 
     def on_draw(self):
-        arcade.start_render()
-        self.board_sprite.draw()
+        self.clear()
+
+        # griglia
+        for i in range(BOARD_SIZE):
+            x = self.margin + i * self.cell_size
+            y = self.margin + i * self.cell_size
+
+            arcade.draw_line(self.margin, y, 600 - self.margin, y, arcade.color.BLACK, 1)
+            arcade.draw_line(x, self.margin, x, 600 - self.margin, arcade.color.BLACK, 1)
+
         self.pieces.draw()
 
-    # ==================  Click del mouse ==================
     def on_mouse_press(self, x, y, button, modifiers):
         row, col = self.get_nearest_intersection(x, y)
 
-        if row is None or col is None:
-            return
-
-        #  Non è consentito posizionare due pezzi nello stesso punto
-        if (row, col) in self.board_state:
+        if row is None or (row, col) in self.board_state:
             return
 
         px, py = self.grid_to_pixel(row, col)
 
-        #  Crea il pezzo
         if self.current_player == "black":
             piece = arcade.Sprite(BLACK_PIECE_IMAGE, self.piece_scale)
             self.board_state[(row, col)] = "black"
@@ -75,15 +57,13 @@ class GomokuGame(arcade.Window):
         piece.center_y = py
         self.pieces.append(piece)
 
-    # ==================  Conversione delle coordinate ==================
     def grid_to_pixel(self, row, col):
-        # Coordinate griglia → coordinate pixel
-        x = self.margin + col * self.cell_size
-        y = self.margin + row * self.cell_size
-        return x, y
+        return (
+            self.margin + col * self.cell_size,
+            self.margin + row * self.cell_size
+        )
 
     def get_nearest_intersection(self, x, y):
-        #  Ottiene l'intersezione più vicina
         col = round((x - self.margin) / self.cell_size)
         row = round((y - self.margin) / self.cell_size)
 
@@ -95,4 +75,3 @@ class GomokuGame(arcade.Window):
 if __name__ == "__main__":
     game = GomokuGame()
     arcade.run()
-
