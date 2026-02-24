@@ -1,7 +1,7 @@
-import 
+import arcade
 import random
 import math
-
+# 测试修改：这是我的第一次改动
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Babbo Natale"
