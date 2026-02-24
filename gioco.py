@@ -1,4 +1,4 @@
-import arcade
+import 
 import random
 import math
 
@@ -145,3 +145,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
