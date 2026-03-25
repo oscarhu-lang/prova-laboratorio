@@ -9,7 +9,7 @@ SCREEN_HEIGHT = 400
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pixel Adventure -")
 
-TILE_SIZE = 32
+TILE_SIZE = 16
 MOVE_SPEED = 4 
 
 

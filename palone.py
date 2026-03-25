@@ -129,6 +129,7 @@ class GameWindow(arcade.Window):
         self.player = None
         self.view_left = 0
         self.view_bottom = 0
+        self.camera = None
 
     def setup(self):
         try:
@@ -137,7 +138,7 @@ class GameWindow(arcade.Window):
             self.tile_texture = arcade.make_soft_square_texture(TILE_SIZE, arcade.color.GRAY, 255, 255)
         
         self.goal_texture = arcade.make_soft_square_texture(TILE_SIZE, arcade.color.TURQUOISE, 255, 255)
-        
+        self.camera = arcade.Camera2D()
         self.animations = {
             'run_up': load_animation('foto/run_up.png'),
             'run_down': load_animation('foto/run_down.png'),
@@ -160,49 +161,23 @@ class GameWindow(arcade.Window):
                 self.player.move(1, 0, 'right')
 
     def on_update(self, delta_time):
+        # aggiorniamo lo stato del giocatore
         self.player.update()
-        player_world_x = self.player.pixel_x + TILE_SIZE // 2
-        map_height_px = len(game_map) * TILE_SIZE
-        player_world_y = map_height_px - self.player.pixel_y - TILE_SIZE // 2
-        
-        
-        changed = False
-        
-        left_boundary = self.view_left + SCREEN_WIDTH // 2
-        if player_world_x < left_boundary - 10 or player_world_x > left_boundary + 10:
-            self.view_left = player_world_x - SCREEN_WIDTH // 2
-            changed = True
-            
-        bottom_boundary = self.view_bottom + SCREEN_HEIGHT // 2
-        if player_world_y < bottom_boundary - 10 or player_world_y > bottom_boundary + 10:
-            self.view_bottom = player_world_y - SCREEN_HEIGHT // 2
-            changed = True
-            
-        
-        map_width_px = len(game_map[0]) * TILE_SIZE
-        if self.view_left < 0:
-            self.view_left = 0
-            changed = True
-        if self.view_left > map_width_px - SCREEN_WIDTH:
-            self.view_left = map_width_px - SCREEN_WIDTH
-            changed = True
-            
-        if self.view_bottom < 0:
-            self.view_bottom = 0
-            changed = True
-        if self.view_bottom > map_height_px - SCREEN_HEIGHT:
-            self.view_bottom = map_height_px - SCREEN_HEIGHT
-            changed = True
 
-        if changed:
-            arcade.set_viewport(self.view_left, 
-                                SCREEN_WIDTH + self.view_left, 
-                                self.view_bottom, 
-                                SCREEN_HEIGHT + self.view_bottom)
+        # aggiorniamo lo stato dei nemici
+
+
+
+
+        # aggiorniamo la posizione della telecamera
+
+        self.camera.position = (self.player.pixel_x, self.player.pixel_y)
+
+
 
     def on_draw(self):
-        arcade.start_render()
-        
+        self.clear()
+        self.camera.use()        
         map_height_px = len(game_map) * TILE_SIZE
         
         
