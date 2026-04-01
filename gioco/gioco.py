@@ -8,7 +8,7 @@ SCREEN_TITLE = "Pixel Adventure - Golden Coins!"
 TILE_SIZE = 64
 MOVE_SPEED = 4
 
-# 地图数据，3现在代表金币的位置
+
 GAME_MAP = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 1],
@@ -148,12 +148,12 @@ class Player(arcade.Sprite):
             self.anim_index += 0.2
             state = f"run_{self.direction}"
         else:
-            self.anim_index += 0.1 # 呼吸动画慢一点
+            self.anim_index += 0.1 
             if self.direction == 'left':
                 state = 'idle_left'
             elif self.direction == 'right':
                 state = 'idle_right'
-            else: # 'up' or 'down'
+            else: 
                 state = 'idle_down'
 
         if self.anim_index >= 8:

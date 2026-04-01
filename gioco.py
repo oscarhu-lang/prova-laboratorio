@@ -1,64 +1,17 @@
-import pygame
-import sys
+import arcade
 import os
 
-
-pygame.init()
+# --- 游戏常量 ---
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 400
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Pixel Adventure -")
+SCREEN_TITLE = "Pixel Adventure - Golden Coins!"
 
-TILE_SIZE = 32
-MOVE_SPEED = 4 
+TILE_SIZE = 64
+MOVE_SPEED = 5 
 
-
-def load_animation(filename, frames_count=8):
-    try:
-        sheet = pygame.image.load(filename).convert_alpha()
-        w, h = sheet.get_size()
-        fw = w // frames_count
-        frames = []
-        for i in range(frames_count):
-            frame = sheet.subsurface(pygame.Rect(i * fw, 0, fw, h))
-            
-            frame = pygame.transform.scale(frame, (TILE_SIZE, TILE_SIZE))
-            frames.append(frame)
-        return frames
-    except FileNotFoundError:
-        
-        f = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        f.fill((100, 100, 100))
-        return [f] * frames_count
-
-
-current_dir = os.path.dirname(__file__)
-TILE_IMAGE_PATH = "foto/unnamed.jpg"
-
-try:
-    tile_image = pygame.image.load(TILE_IMAGE_PATH).convert()
-    tile_image = pygame.transform.scale(tile_image, (TILE_SIZE, TILE_SIZE))
-except FileNotFoundError:
-    print(f" non trova la foto: {TILE_IMAGE_PATH}。")
-    tile_image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-    tile_image.fill((100, 100, 100))
-
-
-animations = {
-    'run_up': load_animation('foto/run_up.png'),
-    'run_down': load_animation('foto/run_down.png'),
-    'run_left': load_animation('foto/run_left.png'),
-    'run_right': load_animation('foto/run_right.png'),
-    'idle_down': load_animation('foto/idle_down.png')
-}
-
-
-goal_image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-goal_image.fill((0, 255, 200)) 
-
-
-game_map = [
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+# 地图数据 (0:空地, 1:墙, 2:终点, 3:金币)
+GAME_MAP = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -76,7 +29,7 @@ game_map = [
     [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
+    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
@@ -99,98 +52,172 @@ game_map = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
+def load_animation_frames(filename, frames_count=8):
+    frames = []
+    try:
+        main_texture = arcade.load_texture(filename)
+        frame_width = main_texture.width // frames_count
+        frame_height = main_texture.height
+        for i in range(frames_count):
+            texture = main_texture.create_subtexture(
+                left=i * frame_width,
+                top=0,
+                width=frame_width,
+                height=frame_height
+            )
+            frames.append(texture)
+    except Exception as e:
+        print(f"Warning: Error loading {filename}: {e}")
+        placeholder = arcade.make_soft_square_texture(TILE_SIZE, arcade.color.FUCHSIA, outer_alpha=255)
+        frames = [placeholder] * frames_count
+    return frames
 
+class Coin(arcade.Sprite):
+    def __init__(self, x, y, frames):
+        super().__init__()
+        self.center_x, self.center_y = x, y
+        self.frames = frames
+        self.texture = self.frames[0]
+        self.anim_index = 0
 
-class Player:
-    def __init__(self, start_x, start_y):
-        self.grid_x = start_x
-        self.grid_y = start_y
-        self.pixel_x = start_x * TILE_SIZE
-        self.pixel_y = start_y * TILE_SIZE
-        self.target_px = self.pixel_x
-        self.target_py = self.pixel_y
+    def update_animation(self, delta_time: float = 1/60):
+        self.anim_index += 0.15
+        if self.anim_index >= len(self.frames):
+            self.anim_index = 0
+        self.texture = self.frames[int(self.anim_index)]
+
+class Player(arcade.Sprite):
+    def __init__(self):
+        super().__init__()
+        # 注意：这里假设你的文件夹里有这些图片
+        self.animations = {
+            'run_up': load_animation_frames('foto/run_up.png'),
+            'run_down': load_animation_frames('foto/run_down.png'),
+            'run_left': load_animation_frames('foto/run_left.png'),
+            'run_right': load_animation_frames('foto/run_right.png'),
+            'idle_down': load_animation_frames('foto/idle_down.png'),
+            'idle_left': load_animation_frames('foto/idle_left.png'),
+            'idle_right': load_animation_frames('foto/idle_right.png')
+        }
+        self.texture = self.animations['idle_down'][0]
+        self.direction = 'down'
+        self.anim_index = 0.0
+
+    def update_animation(self, delta_time: float = 1/60):
+        is_moving = abs(self.change_x) > 0.1 or abs(self.change_y) > 0.1
         
-        self.is_moving = False
-        self.dir = 'down'
-        self.anim_idx = 0.0
+        if self.change_x > 0: self.direction = 'right'
+        elif self.change_x < 0: self.direction = 'left'
+        elif self.change_y > 0: self.direction = 'up'
+        elif self.change_y < 0: self.direction = 'down'
 
-    def move(self, dx, dy, direction):
-        if self.is_moving: return
-        self.dir = direction
-        nx, ny = self.grid_x + dx, self.grid_y + dy
+        state = f"{'run' if is_moving else 'idle'}_{self.direction}"
+        if state not in self.animations: state = 'idle_down'
         
+        frames = self.animations[state]
+        self.anim_index += 0.2
+        if self.anim_index >= len(frames): self.anim_index = 0
+        self.texture = frames[int(self.anim_index)]
+
+class GameView(arcade.View):
+    def __init__(self):
+        super().__init__()
+        self.player = None
+        self.player_list = None
+        self.wall_list = None
+        self.coin_list = None
+        # Arcade 3.x 使用 Camera2D
+        self.camera = None
         
-        if 0 <= ny < len(game_map) and 0 <= nx < len(game_map[0]):
-            if game_map[ny][nx] != 1:
-                self.grid_x, self.grid_y = nx, ny
-                self.target_px, self.target_py = nx * TILE_SIZE, ny * TILE_SIZE
-                self.is_moving = True
+        self.left_pressed = self.right_pressed = False
+        self.up_pressed = self.down_pressed = False
 
-    def update(self):
-        if self.is_moving:
-            if self.pixel_x < self.target_px: self.pixel_x += MOVE_SPEED
-            elif self.pixel_x > self.target_px: self.pixel_x -= MOVE_SPEED
-            if self.pixel_y < self.target_py: self.pixel_y += MOVE_SPEED
-            elif self.pixel_y > self.target_py: self.pixel_y -= MOVE_SPEED
-            
-            if self.pixel_x == self.target_px and self.pixel_y == self.target_py:
-                self.is_moving = False
-            self.anim_idx += 0.2
-        else:
-            self.anim_idx += 0.05 
-            
-        if self.anim_idx >= 8: self.anim_idx = 0
+    def setup(self):
+        self.player_list = arcade.SpriteList()
+        self.wall_list = arcade.SpriteList(use_spatial_hash=True)
+        self.coin_list = arcade.SpriteList()
+        
+        # --- 核心修复：Arcade 3.x 相机初始化 ---
+        self.camera = arcade.camera.Camera2D()
 
-    def draw(self, cam_x, cam_y):
-        state = f"run_{self.dir}" if self.is_moving else "idle_down"
-        img = animations[state][int(self.anim_idx)]
-        screen.blit(img, (self.pixel_x - cam_x, self.pixel_y - cam_y))
-
-
-player = Player(13, 3)
-
-
-clock = pygame.time.Clock()
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit(); sys.exit()
-
-    
-    keys = pygame.key.get_pressed()
-    if not player.is_moving:
-        if keys[pygame.K_w]: player.move(0, -1, 'up')
-        elif keys[pygame.K_s]: player.move(0, 1, 'down')
-        elif keys[pygame.K_a]: player.move(-1, 0, 'left')
-        elif keys[pygame.K_d]: player.move(1, 0, 'right')
-
-    player.update()
-
-
-    cam_x = player.pixel_x - SCREEN_WIDTH // 2 + TILE_SIZE // 2
-    cam_y = player.pixel_y - SCREEN_HEIGHT // 2 + TILE_SIZE // 2
-    
-    
-    map_width_px = len(game_map[0]) * TILE_SIZE
-    map_height_px = len(game_map) * TILE_SIZE
-    cam_x = max(0, min(cam_x, map_width_px - SCREEN_WIDTH))
-    cam_y = max(0, min(cam_y, map_height_px - SCREEN_HEIGHT))
-
-    screen.fill((30, 30, 30)) 
-
-    
-    for r_idx, row in enumerate(game_map):
-        for c_idx, cell in enumerate(row):
-            draw_pos = (c_idx * TILE_SIZE - cam_x, r_idx * TILE_SIZE - cam_y)
-            
-            if -TILE_SIZE < draw_pos[0] < SCREEN_WIDTH and -TILE_SIZE < draw_pos[1] < SCREEN_HEIGHT:
+        coin_frames = load_animation_frames("foto/animated_items.png", 8)
+        map_height = len(GAME_MAP)
+        for row_idx, row in enumerate(GAME_MAP):
+            for col_idx, cell in enumerate(row):
+                x = col_idx * TILE_SIZE + TILE_SIZE // 2
+                y = (map_height - 1 - row_idx) * TILE_SIZE + TILE_SIZE // 2
                 if cell == 1:
-                    screen.blit(tile_image, draw_pos)
-                elif cell == 2:
-                    screen.blit(goal_image, draw_pos)
+                    wall = arcade.SpriteSolidColor(TILE_SIZE, TILE_SIZE, arcade.color.GRAY)
+                    wall.position = (x, y)
+                    self.wall_list.append(wall)
+                elif cell == 3:
+                    self.coin_list.append(Coin(x, y, coin_frames))
 
-    
-    player.draw(cam_x, cam_y)
+        self.player = Player()
+        self.player.position = (13 * TILE_SIZE, (map_height - 3) * TILE_SIZE)
+        self.player_list.append(self.player)
 
-    pygame.display.flip()
-    clock.tick(60)
+    def update_player_speed(self):
+        self.player.change_x = 0
+        self.player.change_y = 0
+        if self.up_pressed and not self.down_pressed: self.player.change_y = MOVE_SPEED
+        elif self.down_pressed and not self.up_pressed: self.player.change_y = -MOVE_SPEED
+        if self.left_pressed and not self.right_pressed: self.player.change_x = -MOVE_SPEED
+        elif self.right_pressed and not self.left_pressed: self.player.change_x = MOVE_SPEED
+
+    def on_key_press(self, key, modifiers):
+        if key in [arcade.key.UP, arcade.key.W]: self.up_pressed = True
+        elif key in [arcade.key.DOWN, arcade.key.S]: self.down_pressed = True
+        elif key in [arcade.key.LEFT, arcade.key.A]: self.left_pressed = True
+        elif key in [arcade.key.RIGHT, arcade.key.D]: self.right_pressed = True
+        self.update_player_speed()
+
+    def on_key_release(self, key, modifiers):
+        if key in [arcade.key.UP, arcade.key.W]: self.up_pressed = False
+        elif key in [arcade.key.DOWN, arcade.key.S]: self.down_pressed = False
+        elif key in [arcade.key.LEFT, arcade.key.A]: self.left_pressed = False
+        elif key in [arcade.key.RIGHT, arcade.key.D]: self.right_pressed = False
+        self.update_player_speed()
+
+    def on_update(self, delta_time):
+        self.player_list.update()
+        
+        # 墙体碰撞处理
+        hit_list = arcade.check_for_collision_with_list(self.player, self.wall_list)
+        for wall in hit_list:
+            if self.player.change_x > 0: self.player.right = wall.left
+            elif self.player.change_x < 0: self.player.left = wall.right
+            if self.player.change_y > 0: self.player.top = wall.bottom
+            elif self.player.change_y < 0: self.player.bottom = wall.top
+
+        self.player_list.update_animation(delta_time)
+        self.coin_list.update_animation(delta_time)
+
+        # 吃金币
+        coins_hit = arcade.check_for_collision_with_list(self.player, self.coin_list)
+        for coin in coins_hit: coin.remove_from_sprite_lists()
+
+        # --- 核心修复：Arcade 3.x 相机跟随 ---
+        # 目标位置是玩家中心减去屏幕一半
+        self.camera.position = (
+            self.player.center_x - SCREEN_WIDTH / 2,
+            self.player.center_y - SCREEN_HEIGHT / 2
+        )
+
+    def on_draw(self):
+        self.clear()
+        # --- 核心修复：Arcade 3.x 相机使用方式 ---
+        self.camera.use()
+        self.wall_list.draw()
+        self.coin_list.draw()
+        self.player_list.draw()
+
+def main():
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    game = GameView()
+    game.setup()
+    window.show_view(game)
+    arcade.run()
+
+if __name__ == "__main__":
+    main()

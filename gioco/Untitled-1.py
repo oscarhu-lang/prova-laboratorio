@@ -1,18 +1,103 @@
 import arcade
 import os
 
-SCREEN_WIDTH = 600
-SCREEN_HEIGHT = 400
+SCREEN_WIDTH = 1248
+SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Pixel Adventure - Golden Coins!"
 
 TILE_SIZE = 64
-MOVE_SPEED = 4
+MOVE_SPEED = 6
 
-# 地图数据，3现在代表金币的位置
+
+class SpriteAnimato(arcade.Sprite):
+    def __init__(self, scala: float = 1.0):
+        super().__init__(scale=scala)
+        self.animazioni = {}          # nome -> dizionario con textures, durata_frame, loop
+        self.animazione_corrente = None
+        self.animazione_default = None
+        self.tempo_frame = 0.0
+        self.indice_frame = 0
+
+    def aggiungi_animazione(
+        self,
+        nome: str,
+        percorso: str,
+        frame_width: int,
+        frame_height: int,
+        num_frame: int,
+        colonne: int,
+        durata: float,
+        loop: bool = True,
+        default: bool = False,
+        riga: int = 0,
+    ):
+        """
+        Carica uno spritesheet e registra l'animazione con il nome dato.
+
+        loop    : se True l'animazione riparte dall'inizio quando finisce
+        default : se True questa è l'animazione di riposo (quella a cui si
+                  torna automaticamente quando una animazione non in loop finisce)
+        riga    : riga dello spritesheet da cui estrarre i frame (0 = prima riga)
+        """
+        sheet = arcade.load_spritesheet(percorso)
+        offset = riga * colonne
+        tutti = sheet.get_texture_grid(
+            size=(frame_width, frame_height),
+            columns=colonne,
+            count=offset + num_frame,
+        )
+        self._registra(nome, tutti[offset:], durata, loop, default)
+
+    def _registra(self, nome, textures, durata, loop, default=False):
+        """Usato internamente per registrare texture già caricate."""
+        self.animazioni[nome] = {
+            "textures": textures,
+            "durata_frame": durata / len(textures),
+            "loop": loop,
+        }
+        if default or self.animazione_default is None:
+            self.animazione_default = nome
+        if self.animazione_corrente is None:
+            self._vai(nome)
+
+    def imposta_animazione(self, nome: str):
+        """Cambia animazione (ignorata se è già quella attiva, evita reset del frame)."""
+        if nome != self.animazione_corrente:
+            self._vai(nome)
+
+    def _vai(self, nome: str):
+        self.animazione_corrente = nome
+        self.indice_frame = 0
+        self.tempo_frame = 0.0
+        self.texture = self.animazioni[nome]["textures"][0]
+
+    def update_animation(self, delta_time: float = 1 / 60):
+        anim = self.animazioni[self.animazione_corrente]
+        self.tempo_frame += delta_time
+
+        if self.tempo_frame < anim["durata_frame"]:
+            return  # non è ancora il momento di cambiare frame
+
+        self.tempo_frame -= anim["durata_frame"]
+        prossimo = self.indice_frame + 1
+
+        if prossimo < len(anim["textures"]):
+            # Frame successivo nello stesso ciclo
+            self.indice_frame = prossimo
+        elif anim["loop"]:
+            # Fine ciclo: ricominciamo da capo
+            self.indice_frame = 0
+        else:
+            # Animazione finita e non looppa: torna alla default
+            self._vai(self.animazione_default)
+            return
+
+        self.texture = anim["textures"][self.indice_frame]
+
 GAME_MAP = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 0, 0, 0, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -28,7 +113,7 @@ GAME_MAP = [
     [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
+    [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
@@ -52,118 +137,99 @@ GAME_MAP = [
 ]
 
 
-def load_animation_frames(filename, frames_count=8):
-    frames = []
-    try:
-        texture = arcade.load_texture(filename)
-        sheet_width = texture.width
-        sheet_height = texture.height
-        frame_width = sheet_width // frames_count
-        for i in range(frames_count):
-            frame_texture = arcade.load_texture(
-                filename,
-                x=i * frame_width,
-                y=0,
-                width=frame_width,
-                height=sheet_height
-            )
-            frames.append(frame_texture)
-    except FileNotFoundError:
-        print(f"Warning: Animation file not found: {filename}")
-        placeholder = arcade.make_soft_square_texture(TILE_SIZE, arcade.color.FUCHSIA, outer_alpha=255)
-        frames = [placeholder] * frames_count
-    return frames
-
-class Coin(arcade.Sprite):
+class Coin(SpriteAnimato):
     def __init__(self, x, y):
-        super().__init__()
+        super().__init__(scala=1.0)
+
         self.center_x = x
         self.center_y = y
-        self.frames = load_animation_frames("foto/animated_items.png", 8)
-        self.texture = self.frames[0]
-        self.anim_index = 0
-        self.width = TILE_SIZE
-        self.height = TILE_SIZE
 
-    def update(self):
-        self.anim_index += 0.2
-        if self.anim_index >= 8:
-            self.anim_index = 0
-        self.texture = self.frames[int(self.anim_index)]
+        self.aggiungi_animazione(
+            nome="spin",
+            percorso="foto/coin.png",
+            frame_width=32,
+            frame_height=30,
+            num_frame=8,
+            colonne=8,
+            durata=0.8,
+            loop=True,
+            default=True
+        )
 
-class Player(arcade.Sprite):
+    def update_animation(self, delta_time=1/60):
+        super().update_animation(delta_time)
+
+class Player(SpriteAnimato):
     def __init__(self, start_grid_x, start_grid_y):
-        super().__init__()
+        super().__init__(scala=1.0)
+
         self.grid_x = start_grid_x
         self.grid_y = start_grid_y
+
         self.center_x = start_grid_x * TILE_SIZE + TILE_SIZE // 2
         self.center_y = self.convert_grid_y(start_grid_y) * TILE_SIZE + TILE_SIZE // 2
+
         self.target_x = self.center_x
         self.target_y = self.center_y
+
         self.is_moving = False
-        self.direction = 'down'
-        self.anim_index = 0.0
-        self.animations = {
-            'run_up': load_animation_frames('foto/run_up.png'),
-            'run_down': load_animation_frames('foto/run_down.png'),
-            'run_left': load_animation_frames('foto/run_left.png'),
-            'run_right': load_animation_frames('foto/run_right.png'),
-            'idle_up': load_animation_frames('foto/idle_up.png'),
-            'idle_down': load_animation_frames('foto/idle_down.png'),
-            'idle_left': load_animation_frames('foto/idle_left.png'),
-            'idle_right': load_animation_frames('foto/idle_right.png')
-        }
-        self.texture = self.animations['idle_down'][0]
-        self.width = TILE_SIZE
-        self.height = TILE_SIZE
-    
+        self.direction = "down"
+
+        # 🔥 AGGIUNGI ANIMAZIONI
+        self.aggiungi_animazione("idle_down", "./foto/idle_down.png", 96, 80, 8, 8, 1.0, True, True)
+        self.aggiungi_animazione("idle_up", "./foto/idle_up.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("idle_left", "./foto/idle_left.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("idle_right", "./foto/idle_right.png", 96, 80, 8, 8, 1.0)
+
+        self.aggiungi_animazione("run_down", "./foto/run_down.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_up", "./foto/run_up.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_left", "./foto/run_left.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_right", "./foto/run_right.png", 96, 80, 8, 8, 1.0)
+
     def convert_grid_y(self, grid_y):
         return len(GAME_MAP) - 1 - grid_y
-    
+
     def move(self, dx, dy, direction):
         if self.is_moving:
             return
+
         self.direction = direction
+
         new_grid_x = self.grid_x + dx
         new_grid_y = self.grid_y + dy
+
         if 0 <= new_grid_y < len(GAME_MAP) and 0 <= new_grid_x < len(GAME_MAP[0]):
             if GAME_MAP[new_grid_y][new_grid_x] != 1:
                 self.grid_x = new_grid_x
                 self.grid_y = new_grid_y
+
                 self.target_x = new_grid_x * TILE_SIZE + TILE_SIZE // 2
                 self.target_y = self.convert_grid_y(new_grid_y) * TILE_SIZE + TILE_SIZE // 2
+
                 self.is_moving = True
-    
-    def update(self):
+
+    def update(self, delta_time):
         if self.is_moving:
             if self.center_x < self.target_x:
                 self.center_x = min(self.center_x + MOVE_SPEED, self.target_x)
             elif self.center_x > self.target_x:
                 self.center_x = max(self.center_x - MOVE_SPEED, self.target_x)
+
             if self.center_y < self.target_y:
                 self.center_y = min(self.center_y + MOVE_SPEED, self.target_y)
             elif self.center_y > self.target_y:
                 self.center_y = max(self.center_y - MOVE_SPEED, self.target_y)
+
             if self.center_x == self.target_x and self.center_y == self.target_y:
                 self.is_moving = False
-            self.anim_index += 0.2
-            state = f"run_{self.direction}"
+
+            self.imposta_animazione(f"run_{self.direction}")
+
         else:
-            self.anim_index += 0.1 # 呼吸动画慢一点
-            if self.direction == 'left':
-                state = 'idle_left'
-            elif self.direction == 'right':
-                state = 'idle_right'
-            elif self.direction == 'up':
-                state = 'idle_up'
-            else: # 'down'
-                state = 'idle_down'
+            self.imposta_animazione(f"idle_{self.direction}")
 
-        if self.anim_index >= 8:
-            self.anim_index = 0
-        
-        self.texture = self.animations[state][int(self.anim_index)]
-
+    def update_animation(self, delta_time=1/60):
+        super().update_animation(delta_time)
 
 class GameView(arcade.View):
     def __init__(self):
@@ -201,7 +267,7 @@ class GameView(arcade.View):
         self.create_map()
         self.player = Player(13, 3)
         self.player_list.append(self.player)
-        self.camera = arcade.Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.camera = arcade.Camera2D()
     
     def create_map(self):
         map_height = len(GAME_MAP)
@@ -237,15 +303,29 @@ class GameView(arcade.View):
         self.wall_list.draw()
         self.coin_list.draw()
         self.player_list.draw()
+        # self.player.draw_hit_box()
+        
+        # arcade.draw_rect_filled(arcade.XYWH(self.player.center_x, self.player.center_y, 100, 100),arcade.color.RED)
+        print(len(self.coin_list))
+
     
     def center_camera_to_player(self):
+        # dimensioni mappa in pixel
         map_width_px = len(GAME_MAP[0]) * TILE_SIZE
         map_height_px = len(GAME_MAP) * TILE_SIZE
-        cam_x = self.player.center_x - SCREEN_WIDTH / 2
-        cam_y = self.player.center_y - SCREEN_HEIGHT / 2
-        cam_x = max(0, min(cam_x, map_width_px - SCREEN_WIDTH))
-        cam_y = max(0, min(cam_y, map_height_px - SCREEN_HEIGHT))
-        self.camera.move_to((cam_x, cam_y), 1.0)
+
+        # centro del giocatore
+        cam_x = self.player.center_x 
+        cam_y = self.player.center_y
+
+        # limiti della camera (non uscire dai bordi)
+        cam_x = max(0, min(cam_x, map_width_px))
+        cam_y = max(0, min(cam_y, map_height_px))
+
+        # applica la posizione
+        self.camera.position = (cam_x, cam_y)
+
+        print(self.camera.position)
     
     def on_update(self, delta_time):
         if not self.player.is_moving:
@@ -260,11 +340,16 @@ class GameView(arcade.View):
         
         self.player_list.update()
         self.coin_list.update()
+
+        self.player_list.update_animation(delta_time)
+        self.coin_list.update_animation(delta_time)
+
+        
         
         collided_coins = arcade.check_for_collision_with_list(self.player, self.coin_list)
         for coin in collided_coins:
             coin.remove_from_sprite_lists()
-            # 可以在这里加音效 arcade.play_sound(...)
+            
             
         self.center_camera_to_player()
     
