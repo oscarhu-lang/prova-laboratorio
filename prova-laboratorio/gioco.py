@@ -1,145 +1,156 @@
+"""
+Sprites with Properties Example
+
+Simple program to show how to store properties on sprites.
+
+Artwork from https://kenney.nl
+
+If Python and Arcade are installed, this example can be run from the command line with:
+python -m arcade.examples.sprite_properties
+"""
 import arcade
-import random
-import math
 
-SCREEN_WIDTH = 600
-SCREEN_HEIGHT = 600
-SCREEN_TITLE = "Babbo Natale"
+# --- Constants ---
+SPRITE_SCALING_PLAYER = 0.5
 
-DISTANZA_MINIMA = 100
+WINDOW_WIDTH = 1280
+WINDOW_HEIGHT = 720
+WINDOW_TITLE = "Sprites with Properties Example"
 
 
-class BabboNatale(arcade.Window):
+INSTRUCTIONS1 = (
+    "Touch a coin to set its intensity property to 'bright'."
+    "Press 'R' to reset the sprites"
+)
+INSTRUCTIONS2 = "Touch the trigger at the bottom-right to destroy all 'bright' sprites."
+
+
+class GameView(arcade.View):
+    """ Our custom Window Class"""
+
     def __init__(self):
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        """ Initializer """
+        # Call the parent class initializer
+        super().__init__()
 
-        self.babbo = None
-        self.lista_babbo = arcade.SpriteList()
-        self.lista_cookie = arcade.SpriteList()
+        # Variables that will hold sprite lists
+        self.player_list = None
+        self.coin_list = None
 
-        self.sfondo = arcade.load_texture("cookie.png")
-        self.suono_munch = arcade.load_sound("munch.mp3")
-        self.audio_attivo = True
+        # Set up the player info
+        self.player_sprite = None
 
-        self.up_pressed = False
-        self.down_pressed = False
-        self.left_pressed = False
-        self.right_pressed = False
+        # Set up sprite that will serve as trigger
+        self.trigger_sprite = None
 
-        self.velocita = 4
+        # Don't show the mouse cursor
+        self.window.set_mouse_visible(False)
 
-        self.biscotti_mangiati = 0
-        self.cookie_per_volta = 1
-
-        self.setup()
+        self.background_color = arcade.color.AMAZON
 
     def setup(self):
-        self.babbo = arcade.Sprite("cookie.png")
-        self.babbo.center_x = 300
-        self.babbo.center_y = 100
-        self.lista_babbo.append(self.babbo)
+        """ Set up the game and initialize the variables. """
 
-        self.crea_cookie()
+        # Sprite lists
+        self.player_list = arcade.SpriteList()
+        self.coin_list = arcade.SpriteList()
 
-    def distanza_da_babbo(self, x, y):
-        return math.dist((x, y), (self.babbo.center_x, self.babbo.center_y))
+        # Set up the player
+        # Character image from kenney.nl
+        self.player_sprite = arcade.Sprite(
+            ":resources:images/animated_characters/female_person/femalePerson_idle.png",
+            scale=0.75,
+        )
+        self.player_sprite.center_x = 50
+        self.player_sprite.center_y = 150
+        self.player_list.append(self.player_sprite)
 
-    def crea_cookie(self):
-        for _ in range(self.cookie_per_volta):
-            cookie = arcade.Sprite(".cookie.png", scale=0.2)
+        # Create the sprites
+        for x in range(180, 1100, 100):
+            coin = arcade.Sprite(
+                ":resources:images/items/coinGold.png",
+                scale=0.3,
+                center_x=x,
+                center_y=400,
+            )
+            coin.intensity = 'dim'
+            coin.alpha = 64
+            self.coin_list.append(coin)
 
-            while True:
-                x = random.randint(50, SCREEN_WIDTH - 50)
-                y = random.randint(50, SCREEN_HEIGHT - 50)
-                if self.distanza_da_babbo(x, y) >= DISTANZA_MINIMA:
-                    break
+        # Create trigger
+        self.trigger_sprite = arcade.Sprite(
+            ":resources:images/pinball/bumper.png", scale=0.5,
+            center_x=750, center_y=50,
+        )
 
-            cookie.center_x = x
-            cookie.center_y = y
-            self.lista_cookie.append(cookie)
+    def on_key_press(self, symbol, modifiers):
+        if symbol == arcade.key.R:
+            self.setup()
 
     def on_draw(self):
+        """ Draw everything """
         self.clear()
-        arcade.draw_texture_rectangle(
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2,
-            SCREEN_WIDTH,
-            SCREEN_HEIGHT,
-            self.sfondo
-        )
+        self.coin_list.draw()
+        arcade.draw_sprite(self.trigger_sprite)
+        self.player_list.draw()
 
-        self.lista_cookie.draw()
-        self.lista_babbo.draw()
+        # Put the instructions on the screen.
+        arcade.draw_text(INSTRUCTIONS1, 10, 90, arcade.color.WHITE, 14)
+        arcade.draw_text(INSTRUCTIONS2, 10, 70, arcade.color.WHITE, 14)
 
-        arcade.draw_text(
-            f"Biscotti: {self.biscotti_mangiati}",
-            10,
-            SCREEN_HEIGHT - 30,
-            arcade.color.WHITE,
-            20
-        )
+        # Query the property on the coins and show results.
+        coins_are_bright = [coin.intensity == 'bright' for coin in self.coin_list]
+        output_any = f"Any sprites have intensity=bright? : {any(coins_are_bright)}"
+        arcade.draw_text(output_any, 10, 40, arcade.color.WHITE, 14)
+        output_all = f"All sprites have intensity=bright? : {all(coins_are_bright)}"
+        arcade.draw_text(output_all, 10, 20, arcade.color.WHITE, 14)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """ Handle Mouse Motion """
+
+        # Move the center of the player sprite to match the mouse x, y
+        self.player_sprite.center_x = x
+        self.player_sprite.center_y = y
 
     def on_update(self, delta_time):
-        change_x = 0
-        change_y = 0
+        """ Movement and game logic """
 
-        if self.up_pressed:
-            change_y += self.velocita
-        if self.down_pressed:
-            change_y -= self.velocita
-        if self.left_pressed:
-            change_x -= self.velocita
-        if self.right_pressed:
-            change_x += self.velocita
+        # Call update on all sprites (The sprites don't do much in this
+        # example though.)
+        self.coin_list.update()
 
-        self.babbo.center_x += change_x
-        self.babbo.center_y += change_y
-
-        self.babbo.center_x = max(0, min(self.width, self.babbo.center_x))
-        self.babbo.center_y = max(0, min(self.height, self.babbo.center_y))
-
-        collisioni = arcade.check_for_collision_with_list(
-            self.babbo, self.lista_cookie
+        # Generate a list of all sprites that collided with the player.
+        coins_hit_list = arcade.check_for_collision_with_list(
+            self.player_sprite, self.coin_list,
         )
 
-        if collisioni:
-            if self.audio_attivo:
-                arcade.play_sound(self.suono_munch)
+        # Loop through each colliding sprite to set intensity=bright
+        for coin in coins_hit_list:
+            coin.intensity = 'bright'
+            coin.alpha = 255
 
-            for cookie in collisioni:
-                cookie.remove_from_sprite_lists()
-                self.biscotti_mangiati += 1
-
-            if self.biscotti_mangiati % 5 == 0:
-                self.cookie_per_volta += 1
-
-            self.crea_cookie()
-
-    def on_key_press(self, key, modifiers):
-        if key in (arcade.key.UP, arcade.key.W):
-            self.up_pressed = True
-        elif key in (arcade.key.DOWN, arcade.key.S):
-            self.down_pressed = True
-        elif key in (arcade.key.LEFT, arcade.key.A):
-            self.left_pressed = True
-        elif key in (arcade.key.RIGHT, arcade.key.D):
-            self.right_pressed = True
-        elif key == arcade.key.M:
-            self.audio_attivo = not self.audio_attivo
-
-    def on_key_release(self, key, modifiers):
-        if key in (arcade.key.UP, arcade.key.W):
-            self.up_pressed = False
-        elif key in (arcade.key.DOWN, arcade.key.S):
-            self.down_pressed = False
-        elif key in (arcade.key.LEFT, arcade.key.A):
-            self.left_pressed = False
-        elif key in (arcade.key.RIGHT, arcade.key.D):
-            self.right_pressed = False
+        hit_trigger = arcade.check_for_collision(self.player_sprite, self.trigger_sprite)
+        if hit_trigger:
+            intense_sprites = [
+                sprite for sprite in self.coin_list if sprite.intensity == 'bright'
+            ]
+            for coin in intense_sprites:
+                coin.remove_from_sprite_lists()
 
 
 def main():
-    gioco = BabboNatale()
+    """ Main function """
+    # Create a window class. This is what actually shows up on screen
+    window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
+
+    # Create and setup the GameView
+    game = GameView()
+    game.setup()
+
+    # Show GameView on screen
+    window.show_view(game)
+
+    # Start the arcade game loop
     arcade.run()
 
 
