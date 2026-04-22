@@ -12,7 +12,7 @@ MOVE_SPEED = 6
 class SpriteAnimato(arcade.Sprite):
     def __init__(self, scala: float = 1.0):
         super().__init__(scale=scala)
-        self.animazioni = {}          # nome -> dizionario con textures, durata_frame, loop
+        self.animazioni = {}
         self.animazione_corrente = None
         self.animazione_default = None
         self.tempo_frame = 0.0
@@ -31,14 +31,6 @@ class SpriteAnimato(arcade.Sprite):
         default: bool = False,
         riga: int = 0,
     ):
-        """
-        Carica uno spritesheet e registra l'animazione con il nome dato.
-
-        loop    : se True l'animazione riparte dall'inizio quando finisce
-        default : se True questa è l'animazione di riposo (quella a cui si
-                  torna automaticamente quando una animazione non in loop finisce)
-        riga    : riga dello spritesheet da cui estrarre i frame (0 = prima riga)
-        """
         sheet = arcade.load_spritesheet(percorso)
         offset = riga * colonne
         tutti = sheet.get_texture_grid(
@@ -49,7 +41,6 @@ class SpriteAnimato(arcade.Sprite):
         self._registra(nome, tutti[offset:], durata, loop, default)
 
     def _registra(self, nome, textures, durata, loop, default=False):
-        """Usato internamente per registrare texture già caricate."""
         self.animazioni[nome] = {
             "textures": textures,
             "durata_frame": durata / len(textures),
@@ -61,7 +52,6 @@ class SpriteAnimato(arcade.Sprite):
             self._vai(nome)
 
     def imposta_animazione(self, nome: str):
-        """Cambia animazione (ignorata se è già quella attiva, evita reset del frame)."""
         if nome != self.animazione_corrente:
             self._vai(nome)
 
@@ -74,28 +64,22 @@ class SpriteAnimato(arcade.Sprite):
     def update_animation(self, delta_time: float = 1 / 60):
         anim = self.animazioni[self.animazione_corrente]
         self.tempo_frame += delta_time
-
         if self.tempo_frame < anim["durata_frame"]:
-            return  # non è ancora il momento di cambiare frame
-
+            return
         self.tempo_frame -= anim["durata_frame"]
         prossimo = self.indice_frame + 1
-
         if prossimo < len(anim["textures"]):
-            # Frame successivo nello stesso ciclo
             self.indice_frame = prossimo
         elif anim["loop"]:
-            # Fine ciclo: ricominciamo da capo
             self.indice_frame = 0
         else:
-            # Animazione finita e non looppa: torna alla default
             self._vai(self.animazione_default)
             return
-
         self.texture = anim["textures"][self.indice_frame]
 
+
 GAME_MAP = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 1, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -135,17 +119,14 @@ GAME_MAP = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ]
 
-
 class Coin(SpriteAnimato):
     def __init__(self, x, y):
         super().__init__(scala=1.0)
-
         self.center_x = x
         self.center_y = y
-
         self.aggiungi_animazione(
             nome="spin",
-            percorso="foto/coin.png",
+            percorso="../foto/coin.png",
             frame_width=32,
             frame_height=30,
             num_frame=8,
@@ -154,36 +135,71 @@ class Coin(SpriteAnimato):
             loop=True,
             default=True
         )
+    def update_animation(self, delta_time=1/60):
+        super().update_animation(delta_time)
+
+
+class Chest(SpriteAnimato):
+    def __init__(self, x, y):
+        super().__init__(scala=1.0)
+        self.center_x = x
+        self.center_y = y
+        self.is_opened = False
+        self.aggiungi_animazione(
+            nome="closed",
+            percorso="foto/TX Props with Shadow.png",
+            frame_width=64,
+            frame_height=64,
+            num_frame=1,
+            colonne=1,
+            durata=1.0,
+            loop=False,
+            default=True
+        )
+        self.aggiungi_animazione(
+            nome="opening",
+            percorso="foto/TX Props with Shadow.png",
+            frame_width=64,
+            frame_height=64,
+            num_frame=4,
+            colonne=4,
+            durata=0.5,
+            loop=False
+        )
+
+    def open(self):
+        if not self.is_opened:
+            self.is_opened = True
+            self.imposta_animazione("opening")
+            print("宝箱被打开！获得奖励！")
+            return True
+        return False
 
     def update_animation(self, delta_time=1/60):
         super().update_animation(delta_time)
 
+
 class Player(SpriteAnimato):
     def __init__(self, start_grid_x, start_grid_y):
         super().__init__(scala=1.0)
-
         self.grid_x = start_grid_x
         self.grid_y = start_grid_y
-
         self.center_x = start_grid_x * TILE_SIZE + TILE_SIZE // 2
         self.center_y = self.convert_grid_y(start_grid_y) * TILE_SIZE + TILE_SIZE // 2
-
         self.target_x = self.center_x
         self.target_y = self.center_y
-
         self.is_moving = False
         self.direction = "down"
 
-        # 🔥 AGGIUNGI ANIMAZIONI
-        self.aggiungi_animazione("idle_down", "./foto/idle_down.png", 96, 80, 8, 8, 1.0, True, True)
-        self.aggiungi_animazione("idle_up", "./foto/idle_up.png", 96, 80, 8, 8, 1.0)
-        self.aggiungi_animazione("idle_left", "./foto/idle_left.png", 96, 80, 8, 8, 1.0)
-        self.aggiungi_animazione("idle_right", "./foto/idle_right.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("idle_down", "../foto/idle_down.png", 96, 80, 8, 8, 1.0, True, True)
+        self.aggiungi_animazione("idle_up", "../foto/idle_up.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("idle_left", "../foto/idle_left.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("idle_right", "../foto/idle_right.png", 96, 80, 8, 8, 1.0)
 
-        self.aggiungi_animazione("run_down", "./foto/run_down.png", 96, 80, 8, 8, 1.0)
-        self.aggiungi_animazione("run_up", "./foto/run_up.png", 96, 80, 8, 8, 1.0)
-        self.aggiungi_animazione("run_left", "./foto/run_left.png", 96, 80, 8, 8, 1.0)
-        self.aggiungi_animazione("run_right", "./foto/run_right.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_down", "../foto/run_down.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_up", "../foto/run_up.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_left", "../foto/run_left.png", 96, 80, 8, 8, 1.0)
+        self.aggiungi_animazione("run_right", "../foto/run_right.png", 96, 80, 8, 8, 1.0)
 
     def convert_grid_y(self, grid_y):
         return len(GAME_MAP) - 1 - grid_y
@@ -191,20 +207,15 @@ class Player(SpriteAnimato):
     def move(self, dx, dy, direction):
         if self.is_moving:
             return
-
         self.direction = direction
-
         new_grid_x = self.grid_x + dx
         new_grid_y = self.grid_y + dy
-
         if 0 <= new_grid_y < len(GAME_MAP) and 0 <= new_grid_x < len(GAME_MAP[0]):
             if GAME_MAP[new_grid_y][new_grid_x] != 1:
                 self.grid_x = new_grid_x
                 self.grid_y = new_grid_y
-
                 self.target_x = new_grid_x * TILE_SIZE + TILE_SIZE // 2
                 self.target_y = self.convert_grid_y(new_grid_y) * TILE_SIZE + TILE_SIZE // 2
-
                 self.is_moving = True
 
     def update(self, delta_time):
@@ -213,22 +224,19 @@ class Player(SpriteAnimato):
                 self.center_x = min(self.center_x + MOVE_SPEED, self.target_x)
             elif self.center_x > self.target_x:
                 self.center_x = max(self.center_x - MOVE_SPEED, self.target_x)
-
             if self.center_y < self.target_y:
                 self.center_y = min(self.center_y + MOVE_SPEED, self.target_y)
             elif self.center_y > self.target_y:
                 self.center_y = max(self.center_y - MOVE_SPEED, self.target_y)
-
             if self.center_x == self.target_x and self.center_y == self.target_y:
                 self.is_moving = False
-
             self.imposta_animazione(f"run_{self.direction}")
-
         else:
             self.imposta_animazione(f"idle_{self.direction}")
 
     def update_animation(self, delta_time=1/60):
         super().update_animation(delta_time)
+
 
 class GameView(arcade.View):
     def __init__(self):
@@ -238,8 +246,9 @@ class GameView(arcade.View):
         self.floor_list = None
         self.goal_list = None
         self.coin_list = None
+        self.chest_list = None
         self.player = None
-        self.camera = None
+        self.camera : arcade.Camera2D = None
         self.left_pressed = False
         self.right_pressed = False
         self.up_pressed = False
@@ -248,7 +257,7 @@ class GameView(arcade.View):
         self.floor_texture = None
         self.goal_texture = None
         arcade.set_background_color(arcade.color.DARK_SLATE_GRAY)
-    
+
     def setup(self):
         self.player_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
@@ -274,7 +283,7 @@ class GameView(arcade.View):
             for col_idx, cell in enumerate(row):
                 x = col_idx * TILE_SIZE + TILE_SIZE // 2
                 y = (map_height - 1 - row_idx) * TILE_SIZE + TILE_SIZE // 2
-                if cell == 1 :
+                if cell == 1:
                     wall = arcade.Sprite()
                     wall.texture = self.tile_texture
                     wall.width = TILE_SIZE
@@ -302,29 +311,15 @@ class GameView(arcade.View):
         self.wall_list.draw()
         self.coin_list.draw()
         self.player_list.draw()
-        # self.player.draw_hit_box()
-        
-        # arcade.draw_rect_filled(arcade.XYWH(self.player.center_x, self.player.center_y, 100, 100),arcade.color.RED)
-        print(len(self.coin_list))
-
     
     def center_camera_to_player(self):
-        # dimensioni mappa in pixel
         map_width_px = len(GAME_MAP[0]) * TILE_SIZE
         map_height_px = len(GAME_MAP) * TILE_SIZE
-
-        # centro del giocatore
-        cam_x = self.player.center_x 
-        cam_y = self.player.center_y
-
-        # limiti della camera (non uscire dai bordi)
-        cam_x = max(0, min(cam_x, map_width_px))
-        cam_y = max(0, min(cam_y, map_height_px))
-
-        # applica la posizione
+        cam_x = self.player.center_x - SCREEN_WIDTH / 2
+        cam_y = self.player.center_y - SCREEN_HEIGHT / 2
+        cam_x = max(0, min(cam_x, map_width_px - SCREEN_WIDTH))
+        cam_y = max(0, min(cam_y, map_height_px - SCREEN_HEIGHT))
         self.camera.position = (cam_x, cam_y)
-
-        print(self.camera.position)
     
     def on_update(self, delta_time):
         if not self.player.is_moving:
@@ -339,16 +334,11 @@ class GameView(arcade.View):
         
         self.player_list.update()
         self.coin_list.update()
-
-        self.player_list.update_animation(delta_time)
-        self.coin_list.update_animation(delta_time)
-
-        
         
         collided_coins = arcade.check_for_collision_with_list(self.player, self.coin_list)
         for coin in collided_coins:
             coin.remove_from_sprite_lists()
-            
+            # 可以在这里加音效 arcade.play_sound(...)
             
         self.center_camera_to_player()
     
