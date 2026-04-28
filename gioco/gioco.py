@@ -5,7 +5,7 @@ SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 400
 SCREEN_TITLE = "Pixel Adventure - Golden Coins!"
 
-TILE_SIZE = 64
+TILE_SIZE = 16
 MOVE_SPEED = 4
 
 
@@ -79,7 +79,7 @@ class Coin(arcade.Sprite):
         super().__init__()
         self.center_x = x
         self.center_y = y
-        self.frames = load_animation_frames("foto/animated_items.png", 8)
+        self.frames = load_animation_frames("foto/coin.png", 8)
         self.texture = self.frames[0]
         self.anim_index = 0
         self.width = TILE_SIZE
