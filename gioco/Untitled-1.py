@@ -1,11 +1,11 @@
 import arcade
 import os
 
-SCREEN_WIDTH = 1248
+SCREEN_WIDTH = 128
 SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Pixel Adventure - Golden Coins!"
 
-TILE_SIZE = 68
+TILE_SIZE = 64
 MOVE_SPEED = 6
 
 
@@ -171,7 +171,7 @@ class Chest(SpriteAnimato):
         if not self.is_opened:
             self.is_opened = True
             self.imposta_animazione("opening")
-            print("宝箱被打开！获得奖励！")
+            print("bravo")
             return True
         return False
 
@@ -266,7 +266,7 @@ class GameView(arcade.View):
         self.coin_list = arcade.SpriteList()
         
         try:
-            self.tile_texture = arcade.load_texture("../foto/unnamed.jpg")
+            self.tile_texture = arcade.load_texture("foto/unnamed.jpg")
         except FileNotFoundError:
             self.tile_texture = arcade.make_soft_square_texture(TILE_SIZE, arcade.color.GRAY, outer_alpha=255)
         self.floor_texture = arcade.make_soft_square_texture(TILE_SIZE, arcade.color.DARK_SLATE_GRAY, outer_alpha=255)
@@ -332,13 +332,13 @@ class GameView(arcade.View):
             elif self.right_pressed:
                 self.player.move(1, 0, 'right')
         
-        self.player.update(delta_time)  
-        self.coin_list.update_animation(delta_time)  
+        self.player_list.update()
+        self.coin_list.update()
         
         collided_coins = arcade.check_for_collision_with_list(self.player, self.coin_list)
         for coin in collided_coins:
             coin.remove_from_sprite_lists()
-            # 可以在这里加音效 arcade.play_sound(...)
+            
             
         self.center_camera_to_player()
     
